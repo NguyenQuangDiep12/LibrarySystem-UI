@@ -1,17 +1,11 @@
-import axiosClient from "./axiosClient";
+import apiClient from './axiosClient'
 
 const authApi = {
-    // Gui toi request POST /api/auth/login
-    login: (loginData) => axiosClient.post("/auth/login", loginData),
+  login: (data) => apiClient.post('/auth/login', data),
+  register: (data) => apiClient.post('/auth/register', data),
+  forgotPassword: (data) => apiClient.post('/auth/forgot-password', data),
+  verifyOtp: (data) => apiClient.post('/auth/verify-otp', data),
+  resetPassword: (data) => apiClient.put('/auth/reset-password', data),
+}
 
-   // DTO: { fullName, email, password, phone }
-  register: (data) => axiosClient.post('/auth/register', data),
-  
-  // DTO: { email }
-  forgotPassword: (data) => axiosClient.post('/auth/forgot-password', data),
-  
-  // DTO: { email, otp }
-  verifyOtp: (data) => axiosClient.post('/auth/verify-otp', data),
-};
-
-export default authApi;
+export default authApi

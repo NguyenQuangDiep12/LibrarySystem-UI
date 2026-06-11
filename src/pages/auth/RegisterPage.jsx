@@ -1,76 +1,94 @@
-import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import authApi from '../../apis/authApi';
+import { Link, useNavigate } from 'react-router-dom'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { z } from 'zod'
+import authApi from '../../apis/authApi'
+import { useAuth } from '../../contexts/AuthContext'
+import { toast } from '../../stores/toastStore'
+import { getPasswordStrength } from '../../utils/helpers'
+import Input from '../../components/ui/Input'
+import Button from '../../components/ui/Button'
+
+const schema = z
+  .object({
+    fullName: z.string().min(2, 'Họ tên tối thiểu 2 ký tự').max(100),
+    email: z.string().email('Email không hợp lệ'),
+    password: z.string().min(6, 'Mật khẩu tối thiểu 6 ký tự'),
+    confirmPassword: z.string(),
+    phone: z.string().min(10, 'Số điện thoại không hợp lệ'),
+  })
+  .refine((d) => d.password === d.confirmPassword, {
+    message: 'Mật khẩu xác nhận không khớp',
+    path: ['confirmPassword'],
+  })
 
 export default function RegisterPage() {
-  const navigate = useNavigate();
-  const [formData, setFormData] = useState({
-    fullName: '', email: '', password: '', phone: ''
-  });
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
+  const navigate = useNavigate()
+  const { login } = useAuth()
 
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
+  const { register, handleSubmit, watch, formState: { errors, isSubmitting } } = useForm({
+    resolver: zodResolver(schema),
+  })
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setIsLoading(true);
-    setError('');
+  const password = watch('password', '')
+  const strength = getPasswordStrength(password)
 
+  const onSubmit = async (data) => {
     try {
-      await authApi.register(formData);
-      alert("Đăng ký thành công! Vui lòng đăng nhập.");
-      navigate('/login'); // Chuyển về trang đăng nhập
+      const { confirmPassword, ...payload } = data
+      const result = await authApi.register(payload)
+      if (result.success) {
+        login(result.data)
+        toast.success('Đăng ký thành công!')
+        navigate('/')
+      }
     } catch (err) {
-      setError(err.message || "Đăng ký thất bại. Vui lòng kiểm tra lại thông tin!");
-    } finally {
-      setIsLoading(false);
+      toast.error(err.message || 'Đăng ký thất bại')
     }
-  };
+  }
 
   return (
-    <div style={styles.container}>
-      <form onSubmit={handleSubmit} style={styles.form}>
-        <h2 style={styles.header}>TẠO TÀI KHOẢN MỚI</h2>
-        {error && <div style={styles.errorBox}>{error}</div>}
-
-        <input style={styles.input} name="fullName" placeholder="Họ và tên" onChange={handleChange} required />
-        <input style={styles.input} type="email" name="email" placeholder="Email" onChange={handleChange} required />
-        <input style={styles.input} type="tel" name="phone" placeholder="Số điện thoại" onChange={handleChange} required />
-        <input style={styles.input} type="password" name="password" placeholder="Mật khẩu" onChange={handleChange} required />
-
-        <button type="submit" disabled={isLoading} style={styles.button}>
-          {isLoading ? 'Đang xử lý...' : 'Đăng Ký'}
-        </button>
-
-        <div style={styles.linkContainer}>
-          <Link to="/login" style={styles.link}>Đã có tài khoản? Đăng nhập ngay</Link>
+    <div className="flex min-h-screen items-center justify-center bg-slate-100 px-4 py-8">
+      <div className="w-full max-w-md rounded-xl border bg-white p-8 shadow-lg">
+        <div className="mb-6 text-center">
+          <span className="text-3xl">📚</span>
+          <h1 className="mt-2 text-2xl font-bold text-slate-900">Đăng ký tài khoản</h1>
         </div>
-      </form>
-    </div>
-  );
-}
 
-const styles = {
-  container: { display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', backgroundColor: '#f0f2f5' },
-  form: { padding: '40px', background: '#fff', borderRadius: '8px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', width: '380px' },
-  header: { textAlign: 'center', marginBottom: '20px', color: '#333' },
-  input: { width: '100%', padding: '12px', marginBottom: '15px', border: '1px solid #ccc', borderRadius: '4px', boxSizing: 'border-box' },
-  button: { width: '100%', padding: '12px', background: '#1a73e8', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' },
-  errorBox: { padding: '10px', background: '#fce8e6', color: '#d93025', borderRadius: '4px', marginBottom: '15px', fontSize: '14px', textAlign: 'center' },
-  successBox: { padding: '10px', background: '#e6f4ea', color: '#137333', borderRadius: '4px', marginBottom: '15px', fontSize: '14px', textAlign: 'center' },
-  linkContainer: { display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: '20px' },
-  link: { color: '#1a73e8', textDecoration: 'none', fontSize: '14px' },
-  
-  // STYLES POPUP OVERLAY
-  overlay: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000 },
-  popup: { background: '#fff', padding: '30px', borderRadius: '8px', width: '350px', position: 'relative' },
-  closeBtn: { position: 'absolute', top: '10px', right: '15px', background: 'none', border: 'none', fontSize: '24px', cursor: 'pointer', color: '#666' },
-  popupHeader: { marginTop: 0, color: '#333' },
-  
-  // STYLES 6 Ô OTP
-  otpContainer: { display: 'flex', justifyContent: 'space-between', marginBottom: '20px' },
-  otpInput: { width: '40px', height: '50px', fontSize: '24px', textAlign: 'center', border: '1px solid #ccc', borderRadius: '4px' }
-};
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          <Input label="Họ và tên" error={errors.fullName?.message} {...register('fullName')} />
+          <Input label="Email" type="email" error={errors.email?.message} {...register('email')} />
+          <Input label="Số điện thoại" type="tel" error={errors.phone?.message} {...register('phone')} />
+          <div>
+            <Input label="Mật khẩu" type="password" error={errors.password?.message} {...register('password')} />
+            {password && (
+              <div className="mt-2">
+                <div className="flex gap-1">
+                  {[1, 2, 3, 4, 5].map((i) => (
+                    <div
+                      key={i}
+                      className={`h-1 flex-1 rounded ${i <= strength.score ? 'bg-primary' : 'bg-slate-200'}`}
+                    />
+                  ))}
+                </div>
+                <p className="mt-1 text-xs text-slate-500">Độ mạnh: {strength.label}</p>
+              </div>
+            )}
+          </div>
+          <Input label="Xác nhận mật khẩu" type="password" error={errors.confirmPassword?.message} {...register('confirmPassword')} />
+
+          <Button type="submit" className="w-full" loading={isSubmitting}>
+            Đăng ký
+          </Button>
+        </form>
+
+        <p className="mt-6 text-center text-sm text-slate-500">
+          Đã có tài khoản?{' '}
+          <Link to="/login" className="font-medium text-primary hover:underline">
+            Đăng nhập
+          </Link>
+        </p>
+      </div>
+    </div>
+  )
+}

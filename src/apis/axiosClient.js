@@ -1,32 +1,32 @@
-import axios from "axios";
+import axios from 'axios'
 
-const axiosClient = axios.create({
-    baseURL: "https://localhost:7067/api",
-    headers: {
-        "Content-Type": "application/json",
-    },
-});
+const apiClient = axios.create({
+  baseURL: import.meta.env.VITE_API_URL || 'https://localhost:7067/api',
+  timeout: 10000,
+  headers: { 'Content-Type': 'application/json' },
+})
 
-// tu dong dinh kem them token vao header authorization neu co
-axiosClient.interceptors.request.use(
-    (config) => {
-        const token = localStorage.getItem("token");
-        if(token){
-            config.headers["Authorization"] = `Bearer ${token}`;
-        }
-    return config;
-    },
-    (error) => {
-        return Promise.reject(error);
-    }
-);
-
-axiosClient.interceptors.response.use(
-  (response) => response.data, // Chỉ lấy data từ Backend, bỏ qua bọc thừa của Axios
-  (error) => {
-    // Trả về lỗi gọn gàng từ Backend (.NET Validation hoặc lỗi hệ thống)
-    return Promise.reject(error.response?.data || error.message);
+apiClient.interceptors.request.use((config) => {
+  const token = localStorage.getItem('accessToken')
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`
   }
-);
+  return config
+})
 
-export default axiosClient;
+apiClient.interceptors.response.use(
+  (response) => response.data,
+  (error) => {
+    if (error.response?.status === 401) {
+      localStorage.removeItem('accessToken')
+      localStorage.removeItem('userInfo')
+      if (!window.location.pathname.startsWith('/login')) {
+        window.location.href = '/login'
+      }
+    }
+    const payload = error.response?.data
+    return Promise.reject(payload || { message: error.message || 'Lỗi hệ thống' })
+  },
+)
+
+export default apiClient

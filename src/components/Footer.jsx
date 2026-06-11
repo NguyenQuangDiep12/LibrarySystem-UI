@@ -1,28 +1,15 @@
-import React from 'react';
+import { Link } from 'react-router-dom'
 
 export default function Footer() {
   return (
-    <footer className="footer">
-      <div className="footer-left">
-        <div className="footer-brand">
-          <div className="footer-brand-dot">📚</div>
-          LibraryHub
+    <footer className="border-t bg-white py-6">
+      <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 px-4 sm:flex-row sm:px-6">
+        <div className="flex items-center gap-2 text-sm text-slate-500">
+          <span>📚</span>
+          <span>Hệ thống quản lý thư viện v1.0</span>
         </div>
-        <div className="footer-divider"></div>
-        <div className="footer-copy">© 2025 — Hệ thống quản lý thư viện v1.0</div>
-      </div>
-
-      <div className="footer-links">
-        <div className="footer-link">Tài liệu</div>
-        <div className="footer-link">Hỗ trợ</div>
-        <div className="footer-link">Điều khoản</div>
-        <div className="footer-link">Bảo mật</div>
-      </div>
-
-      <div className="footer-status">
-        <div className="status-dot"></div>
-        Hệ thống hoạt động bình thường
+        <p className="text-sm text-slate-400">© 2025 — Library Management System</p>
       </div>
     </footer>
-  );
+  )
 }

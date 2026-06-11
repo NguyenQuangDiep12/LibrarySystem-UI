@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import { statsApi } from '../../apis/apis'
-import { getApiData } from '../../utils/helpers'
+import { getApiData, formatDate } from '../../utils/helpers'
 import { Navigate } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 import { isAdmin } from '../../constants/roles'
@@ -32,8 +32,11 @@ export default function StatisticsPage() {
     queryFn: () => statsApi.getTopBooks({ top }),
   })
 
+  // OverviewStatsResponse: { totalBooks, totalUsers, totalBorrowRecords, totalOverdueRecords }
   const overview = getApiData(overviewRes) ?? {}
+  // OverdueBorrowResponse: { borrowId, readerName, dueDate, overdueDays }
   const overdueList = getApiData(overdueRes) ?? []
+  // TopBookResponse: { bookId, title, borrowCount }
   const topBooks = getApiData(topBooksRes) ?? []
 
   const cards = [
@@ -73,6 +76,8 @@ export default function StatisticsPage() {
           <h2 className="text-lg font-semibold">Phiếu quá hạn</h2>
           {loadingOverdue ? (
             <Skeleton className="mt-4 h-48 w-full" />
+          ) : overdueList.length === 0 ? (
+            <p className="mt-4 text-sm text-slate-500">Không có phiếu quá hạn.</p>
           ) : (
             <div className="mt-4 overflow-x-auto">
               <table className="w-full text-sm">
@@ -85,11 +90,12 @@ export default function StatisticsPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y">
+                  {/* OverdueBorrowResponse: { borrowId, readerName, dueDate, overdueDays } */}
                   {overdueList.map((r) => (
-                    <tr key={r.borrowRecordId ?? r.id} className={r.overdueDays > 14 ? 'bg-red-50' : ''}>
-                      <td className="py-2">{r.borrowCode ?? r.id}</td>
+                    <tr key={r.borrowId} className={r.overdueDays > 14 ? 'bg-red-50' : ''}>
+                      <td className="py-2">{r.borrowId}</td>
                       <td className="py-2">{r.readerName}</td>
-                      <td className="py-2">{new Date(r.dueDate).toLocaleDateString('vi-VN')}</td>
+                      <td className="py-2">{formatDate(r.dueDate)}</td>
                       <td className="py-2 font-medium text-red-600">{r.overdueDays} ngày</td>
                     </tr>
                   ))}
@@ -132,8 +138,9 @@ export default function StatisticsPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y">
+                  {/* TopBookResponse: { bookId, title, borrowCount } */}
                   {topBooks.map((b, i) => (
-                    <tr key={b.bookId ?? b.id}>
+                    <tr key={b.bookId}>
                       <td className="py-2">{i + 1}</td>
                       <td className="py-2">{b.title}</td>
                       <td className="py-2">{b.borrowCount}</td>

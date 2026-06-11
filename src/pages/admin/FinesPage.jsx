@@ -47,7 +47,7 @@ export default function FinesPage() {
               <thead className="border-b bg-slate-50 text-left">
                 <tr>
                   <th className="px-4 py-3">ID</th>
-                  <th className="px-4 py-3">Mã phiếu</th>
+                  <th className="px-4 py-3">Mã phiếu mượn</th>
                   <th className="px-4 py-3">Bạn đọc</th>
                   <th className="px-4 py-3">Số tiền</th>
                   <th className="px-4 py-3">Loại</th>
@@ -57,18 +57,28 @@ export default function FinesPage() {
                 </tr>
               </thead>
               <tbody className="divide-y">
+                {/* FineResponse: { fineId, borrowDetailId, borrowCode, readerId, readerName,
+                    amount, reason, fineType, paymentStatus, paidAt, createdAt } */}
                 {items.map((f) => (
-                  <tr key={f.fineId ?? f.id}>
-                    <td className="px-4 py-3">{f.fineId ?? f.id}</td>
+                  <tr key={f.fineId}>
+                    <td className="px-4 py-3">{f.fineId}</td>
                     <td className="px-4 py-3">{f.borrowCode}</td>
                     <td className="px-4 py-3">{f.readerName}</td>
                     <td className="px-4 py-3 font-medium">{formatCurrency(f.amount)}</td>
-                    <td className="px-4 py-3"><Badge className={fineTypeColors[f.violationType ?? f.type]}>{f.violationType ?? f.type}</Badge></td>
-                    <td className="px-4 py-3"><Badge className={paymentStatusColors[f.paymentStatus]}>{f.paymentStatus}</Badge></td>
+                    <td className="px-4 py-3">
+                      <Badge className={fineTypeColors[f.fineType]}>{f.fineType}</Badge>
+                    </td>
+                    <td className="px-4 py-3">
+                      <Badge className={paymentStatusColors[f.paymentStatus]}>{f.paymentStatus}</Badge>
+                    </td>
                     <td className="px-4 py-3">{formatDate(f.createdAt)}</td>
                     <td className="px-4 py-3">
                       {f.paymentStatus === 'PENDING' && (
-                        <Button size="sm" loading={payMutation.isPending} onClick={() => payMutation.mutate(f.fineId ?? f.id)}>
+                        <Button
+                          size="sm"
+                          loading={payMutation.isPending}
+                          onClick={() => payMutation.mutate(f.fineId)}
+                        >
                           Xác nhận TT
                         </Button>
                       )}

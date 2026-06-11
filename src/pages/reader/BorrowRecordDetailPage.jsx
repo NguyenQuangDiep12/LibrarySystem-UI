@@ -10,7 +10,7 @@ import Breadcrumb from '../../components/ui/Breadcrumb'
 import { Skeleton } from '../../components/ui/Skeleton'
 import ErrorState from '../../components/ui/ErrorState'
 
-export default function BorrowRecordDetailPage({ basePath = '/reader' }) {
+export default function BorrowRecordDetailPage() {
   const { id } = useParams()
   const queryClient = useQueryClient()
 
@@ -28,6 +28,9 @@ export default function BorrowRecordDetailPage({ basePath = '/reader' }) {
     onError: (err) => toast.error(err.message),
   })
 
+  // BorrowRecordDetailResponse: { borrowId, borrowCode, readerId, readerName,
+  //   approverId, approverName, borrowDate, dueDate, returnedDate, borrowType,
+  //   status, extensionCount, borrowDetails: BorrowDetailResponse[] }
   const record = getApiData(data)
 
   if (isLoading) return <Skeleton className="h-96 w-full rounded-xl" />
@@ -36,13 +39,13 @@ export default function BorrowRecordDetailPage({ basePath = '/reader' }) {
   const canRequestExtension =
     record.status === 'BORROWING' &&
     record.extensionRequestStatus !== 'PENDING' &&
-    (record.extensionCount ?? 0) < (record.maxExtensions ?? 2)
+    (record.extensionCount ?? 0) < 2
 
   return (
     <div>
       <Breadcrumb
         items={[
-          { label: basePath.includes('admin') ? 'Phiếu mượn' : 'Lịch sử mượn', to: `${basePath}/borrow-records`.replace('/borrow-records/borrow-records', '/borrow-records').replace('/reader/borrow-records', '/reader/borrow-history') },
+          { label: 'Lịch sử mượn', to: '/reader/borrow-history' },
           { label: record.borrowCode },
         ]}
       />
@@ -51,7 +54,10 @@ export default function BorrowRecordDetailPage({ basePath = '/reader' }) {
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold">{record.borrowCode}</h1>
-            <p className="mt-1 text-slate-500">Bạn đọc: {record.readerName ?? record.reader?.fullName}</p>
+            <p className="mt-1 text-slate-500">Bạn đọc: {record.readerName}</p>
+            {record.approverName && (
+              <p className="text-slate-500">Người duyệt: {record.approverName}</p>
+            )}
           </div>
           <div className="flex gap-2">
             <Badge className={borrowStatusColors[record.status]}>{record.status}</Badge>
@@ -64,12 +70,26 @@ export default function BorrowRecordDetailPage({ basePath = '/reader' }) {
         </div>
 
         <dl className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <div><dt className="text-sm text-slate-500">Ngày mượn</dt><dd className="font-medium">{formatDate(record.borrowDate)}</dd></div>
-          <div><dt className="text-sm text-slate-500">Hạn trả</dt><dd className="font-medium">{formatDate(record.dueDate)}</dd></div>
-          <div><dt className="text-sm text-slate-500">Ngày trả</dt><dd className="font-medium">{formatDate(record.returnDate)}</dd></div>
-          <div><dt className="text-sm text-slate-500">Loại mượn</dt><dd className="font-medium">{record.borrowType === 'IN_LIBRARY' ? 'Đọc tại chỗ' : 'Mang về'}</dd></div>
-          <div><dt className="text-sm text-slate-500">Số lần gia hạn</dt><dd className="font-medium">{record.extensionCount ?? 0}</dd></div>
-          {record.approvedBy && <div><dt className="text-sm text-slate-500">Người duyệt</dt><dd className="font-medium">{record.approvedBy}</dd></div>}
+          <div>
+            <dt className="text-sm text-slate-500">Ngày mượn</dt>
+            <dd className="font-medium">{formatDate(record.borrowDate)}</dd>
+          </div>
+          <div>
+            <dt className="text-sm text-slate-500">Hạn trả</dt>
+            <dd className="font-medium">{formatDate(record.dueDate)}</dd>
+          </div>
+          <div>
+            <dt className="text-sm text-slate-500">Ngày trả</dt>
+            <dd className="font-medium">{formatDate(record.returnedDate)}</dd>
+          </div>
+          <div>
+            <dt className="text-sm text-slate-500">Loại mượn</dt>
+            <dd className="font-medium">{record.borrowType === 'IN_LIBRARY' ? 'Đọc tại chỗ' : 'Mang về'}</dd>
+          </div>
+          <div>
+            <dt className="text-sm text-slate-500">Số lần gia hạn</dt>
+            <dd className="font-medium">{record.extensionCount ?? 0}</dd>
+          </div>
         </dl>
 
         {canRequestExtension && (
@@ -91,13 +111,15 @@ export default function BorrowRecordDetailPage({ basePath = '/reader' }) {
               </tr>
             </thead>
             <tbody className="divide-y">
-              {(record.details ?? []).map((d) => (
-                <tr key={d.borrowDetailId ?? d.id}>
+              {/* BorrowDetailResponse: { borrowDetailId, copyId, barcode, bookTitle,
+                  returnedAt, itemCondition, status } */}
+              {(record.borrowDetails ?? []).map((d) => (
+                <tr key={d.borrowDetailId}>
                   <td className="px-4 py-2">{d.barcode}</td>
-                  <td className="px-4 py-2">{d.bookTitle ?? d.title}</td>
-                  <td className="px-4 py-2">{formatDateTime(d.returnDate)}</td>
-                  <td className="px-4 py-2">{d.returnCondition ?? '—'}</td>
-                  <td className="px-4 py-2">{d.status ?? '—'}</td>
+                  <td className="px-4 py-2">{d.bookTitle}</td>
+                  <td className="px-4 py-2">{formatDateTime(d.returnedAt)}</td>
+                  <td className="px-4 py-2">{d.itemCondition ?? '—'}</td>
+                  <td className="px-4 py-2">{d.status}</td>
                 </tr>
               ))}
             </tbody>

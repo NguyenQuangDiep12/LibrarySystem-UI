@@ -23,6 +23,7 @@ export default function StaffsPage() {
   const queryClient = useQueryClient()
   const [page, setPage] = useState(1)
   const [modalOpen, setModalOpen] = useState(false)
+  // CreateStaffRequest: { email, fullName, password, phone, address }
   const [form, setForm] = useState({ email: '', fullName: '', password: '', phone: '', address: '' })
 
   const { data, isLoading, isError, refetch } = useQuery({
@@ -41,6 +42,7 @@ export default function StaffsPage() {
     onError: (err) => toast.error(err.message),
   })
 
+  // UserListInfoResponse: { id, fullName, email, phone, role, status, cardStatus }
   const { items, totalPages, totalRecords } = getPaginatedItems(data)
 
   if (!isAdmin(role)) return <Navigate to="/admin/dashboard" replace />
@@ -62,6 +64,7 @@ export default function StaffsPage() {
             <table className="w-full text-sm">
               <thead className="border-b bg-slate-50 text-left">
                 <tr>
+                  <th className="px-4 py-3">ID</th>
                   <th className="px-4 py-3">Họ tên</th>
                   <th className="px-4 py-3">Email</th>
                   <th className="px-4 py-3">SĐT</th>
@@ -70,11 +73,14 @@ export default function StaffsPage() {
               </thead>
               <tbody className="divide-y">
                 {items.map((s) => (
-                  <tr key={s.userId ?? s.id}>
+                  <tr key={s.id}>
+                    <td className="px-4 py-3">{s.id}</td>
                     <td className="px-4 py-3 font-medium">{s.fullName}</td>
                     <td className="px-4 py-3">{s.email}</td>
                     <td className="px-4 py-3">{s.phone}</td>
-                    <td className="px-4 py-3"><Badge className={accountStatusColors[s.status]}>{s.status}</Badge></td>
+                    <td className="px-4 py-3">
+                      <Badge className={accountStatusColors[s.status]}>{s.status}</Badge>
+                    </td>
                   </tr>
                 ))}
               </tbody>

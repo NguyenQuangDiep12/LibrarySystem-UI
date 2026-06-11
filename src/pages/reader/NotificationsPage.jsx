@@ -10,6 +10,7 @@ import EmptyState from '../../components/ui/EmptyState'
 import ErrorState from '../../components/ui/ErrorState'
 import { TableSkeleton } from '../../components/ui/Skeleton'
 
+// NotificationResponse.type values from NotificationType enum
 const typeIcons = {
   EXTENSIONAPPROVED: '✅',
   EXTENSIONREJECTED: '❌',
@@ -39,6 +40,7 @@ export default function NotificationsPage() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['notifications'] }),
   })
 
+  // NotificationResponse: { notificationId, type, title, content, isRead, readAt, createdAt }
   const { items, totalPages, totalRecords } = getPaginatedItems(data)
 
   return (
@@ -56,8 +58,8 @@ export default function NotificationsPage() {
         {!isLoading && !isError && items.length === 0 && <EmptyState title="Không có thông báo" />}
         {items.map((n) => (
           <div
-            key={n.notificationId ?? n.id}
-            onClick={() => !n.isRead && readOne.mutate(n.notificationId ?? n.id)}
+            key={n.notificationId}
+            onClick={() => !n.isRead && readOne.mutate(n.notificationId)}
             className={`cursor-pointer rounded-xl border bg-white p-4 shadow-sm transition-shadow hover:shadow-md ${
               !n.isRead ? 'border-l-4 border-l-primary' : ''
             }`}
@@ -71,7 +73,7 @@ export default function NotificationsPage() {
                   </h3>
                   {!n.isRead && <Badge className="bg-blue-100 text-blue-700">Chưa đọc</Badge>}
                 </div>
-                <p className="mt-1 text-sm text-slate-600 line-clamp-2">{n.content ?? n.message}</p>
+                <p className="mt-1 text-sm text-slate-600 line-clamp-2">{n.content}</p>
                 <p className="mt-2 text-xs text-slate-400">{formatRelativeTime(n.createdAt)}</p>
               </div>
             </div>

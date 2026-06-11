@@ -35,17 +35,20 @@ export default function BorrowHistoryPage() {
 
   const { items, totalPages, totalRecords } = getPaginatedItems(data)
 
+  // BorrowRecordSummaryResponse: { borrowId, borrowCode, readerId, readerName,
+  //   borrowDate, dueDate, returnedDate, extensionCount, borrowType, status,
+  //   extensionRequestStatus, totalBooks }
   const canRequestExtension = (record) =>
     record.status === 'BORROWING' &&
     record.extensionRequestStatus !== 'PENDING' &&
-    (record.extensionCount ?? 0) < (record.maxExtensions ?? 2)
+    (record.extensionCount ?? 0) < 2
 
   return (
     <div>
       <h1 className="text-2xl font-bold text-slate-900">Lịch sử mượn sách</h1>
 
       <div className="mt-6 overflow-hidden rounded-xl border bg-white shadow-sm">
-        {isLoading && <div className="p-6"><TableSkeleton cols={7} /></div>}
+        {isLoading && <div className="p-6"><TableSkeleton cols={8} /></div>}
         {isError && <ErrorState onRetry={refetch} />}
         {!isLoading && !isError && items.length === 0 && (
           <EmptyState title="Chưa có phiếu mượn nào" />
@@ -67,11 +70,11 @@ export default function BorrowHistoryPage() {
               </thead>
               <tbody className="divide-y">
                 {items.map((r) => (
-                  <tr key={r.borrowRecordId ?? r.id} className="hover:bg-slate-50">
+                  <tr key={r.borrowId} className="hover:bg-slate-50">
                     <td className="px-4 py-3 font-medium">{r.borrowCode}</td>
                     <td className="px-4 py-3">{formatDate(r.borrowDate)}</td>
                     <td className="px-4 py-3">{formatDate(r.dueDate)}</td>
-                    <td className="px-4 py-3">{r.bookCount ?? r.details?.length ?? '—'}</td>
+                    <td className="px-4 py-3">{r.totalBooks ?? '—'}</td>
                     <td className="px-4 py-3">{r.borrowType === 'IN_LIBRARY' ? 'Đọc tại chỗ' : 'Mang về'}</td>
                     <td className="px-4 py-3">
                       <Badge className={borrowStatusColors[r.status]}>{r.status}</Badge>
@@ -85,14 +88,14 @@ export default function BorrowHistoryPage() {
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex gap-2">
-                        <Link to={`/reader/borrow-records/${r.borrowRecordId ?? r.id}`}>
+                        <Link to={`/reader/borrow-records/${r.borrowId}`}>
                           <Button size="sm" variant="secondary">Xem</Button>
                         </Link>
                         {canRequestExtension(r) && (
                           <Button
                             size="sm"
                             loading={requestExtension.isPending}
-                            onClick={() => requestExtension.mutate(r.borrowRecordId ?? r.id)}
+                            onClick={() => requestExtension.mutate(r.borrowId)}
                           >
                             Gia hạn
                           </Button>

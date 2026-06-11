@@ -3,14 +3,13 @@ import { useParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { userApi, borrowApi, fineApi } from '../../apis/apis'
 import { getApiData, getPaginatedItems, formatDate, formatCurrency } from '../../utils/helpers'
-import { accountStatusColors, cardStatusColors, borrowStatusColors } from '../../constants/statusColors'
+import { accountStatusColors, cardStatusColors, borrowStatusColors, paymentStatusColors, fineTypeColors } from '../../constants/statusColors'
 import { toast } from '../../stores/toastStore'
 import { useAuth } from '../../contexts/AuthContext'
 import { isAdmin } from '../../constants/roles'
 import Breadcrumb from '../../components/ui/Breadcrumb'
 import Badge from '../../components/ui/Badge'
 import Button from '../../components/ui/Button'
-import Input from '../../components/ui/Input'
 import { Skeleton } from '../../components/ui/Skeleton'
 import ErrorState from '../../components/ui/ErrorState'
 
@@ -20,17 +19,21 @@ export default function UserDetailPage() {
   const queryClient = useQueryClient()
   const [tab, setTab] = useState('info')
 
+  // UserProfileResponse: { userId, fullName, email, phone, address, avatarUrl, role,
+  //   status, libraryCardCode, cardStatus, createdAt }
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ['user', id],
     queryFn: () => userApi.getById(id),
   })
 
+  // BorrowRecordSummaryResponse list
   const { data: borrowData } = useQuery({
     queryKey: ['user-borrows', id],
     queryFn: () => borrowApi.getByUser(id, { pageSize: 20 }),
     enabled: tab === 'borrows',
   })
 
+  // FineResponse list
   const { data: finesData } = useQuery({
     queryKey: ['user-fines', id],
     queryFn: () => fineApi.getByUser(id, { pageSize: 20 }),
@@ -122,6 +125,7 @@ export default function UserDetailPage() {
 
         {tab === 'info' && (
           <dl className="mt-6 grid gap-4 sm:grid-cols-2">
+            {/* UserProfileResponse fields */}
             <div><dt className="text-sm text-slate-500">Địa chỉ</dt><dd>{user.address || '—'}</dd></div>
             <div><dt className="text-sm text-slate-500">Mã thẻ</dt><dd>{user.libraryCardCode || '—'}</dd></div>
             <div><dt className="text-sm text-slate-500">Ngày tạo</dt><dd>{formatDate(user.createdAt)}</dd></div>
@@ -134,15 +138,20 @@ export default function UserDetailPage() {
               <tr>
                 <th className="py-2">Mã phiếu</th>
                 <th className="py-2">Ngày mượn</th>
+                <th className="py-2">Hạn trả</th>
                 <th className="py-2">Trạng thái</th>
               </tr>
             </thead>
             <tbody className="divide-y">
+              {/* BorrowRecordSummaryResponse: { borrowId, borrowCode, borrowDate, dueDate, status } */}
               {borrows.map((r) => (
-                <tr key={r.borrowRecordId ?? r.id}>
+                <tr key={r.borrowId}>
                   <td className="py-2">{r.borrowCode}</td>
                   <td className="py-2">{formatDate(r.borrowDate)}</td>
-                  <td className="py-2"><Badge className={borrowStatusColors[r.status]}>{r.status}</Badge></td>
+                  <td className="py-2">{formatDate(r.dueDate)}</td>
+                  <td className="py-2">
+                    <Badge className={borrowStatusColors[r.status]}>{r.status}</Badge>
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -157,15 +166,22 @@ export default function UserDetailPage() {
                 <th className="py-2">Số tiền</th>
                 <th className="py-2">Loại</th>
                 <th className="py-2">Trạng thái</th>
+                <th className="py-2">Ngày tạo</th>
               </tr>
             </thead>
             <tbody className="divide-y">
+              {/* FineResponse: { fineId, amount, fineType, paymentStatus, createdAt } */}
               {fines.map((f) => (
-                <tr key={f.fineId ?? f.id}>
-                  <td className="py-2">{f.fineId ?? f.id}</td>
+                <tr key={f.fineId}>
+                  <td className="py-2">{f.fineId}</td>
                   <td className="py-2">{formatCurrency(f.amount)}</td>
-                  <td className="py-2">{f.violationType ?? f.type}</td>
-                  <td className="py-2">{f.paymentStatus}</td>
+                  <td className="py-2">
+                    <Badge className={fineTypeColors[f.fineType]}>{f.fineType}</Badge>
+                  </td>
+                  <td className="py-2">
+                    <Badge className={paymentStatusColors[f.paymentStatus]}>{f.paymentStatus}</Badge>
+                  </td>
+                  <td className="py-2">{formatDate(f.createdAt)}</td>
                 </tr>
               ))}
             </tbody>

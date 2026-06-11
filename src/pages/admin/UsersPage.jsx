@@ -42,8 +42,18 @@ export default function UsersPage() {
       <h1 className="text-2xl font-bold">Quản lý người dùng</h1>
 
       <div className="mt-4 grid gap-3 sm:grid-cols-3">
-        <input placeholder="Họ tên..." value={fullName} onChange={(e) => { setFullName(e.target.value); setPage(1) }} className="rounded-lg border px-3 py-2 text-sm outline-none focus:border-primary" />
-        <input placeholder="Email..." value={email} onChange={(e) => { setEmail(e.target.value); setPage(1) }} className="rounded-lg border px-3 py-2 text-sm outline-none focus:border-primary" />
+        <input
+          placeholder="Họ tên..."
+          value={fullName}
+          onChange={(e) => { setFullName(e.target.value); setPage(1) }}
+          className="rounded-lg border px-3 py-2 text-sm outline-none focus:border-primary"
+        />
+        <input
+          placeholder="Email..."
+          value={email}
+          onChange={(e) => { setEmail(e.target.value); setPage(1) }}
+          className="rounded-lg border px-3 py-2 text-sm outline-none focus:border-primary"
+        />
         <Select value={status} onChange={(e) => { setStatus(e.target.value); setPage(1) }}>
           <option value="">Tất cả trạng thái</option>
           <option value="ACTIVE">ACTIVE</option>
@@ -71,17 +81,22 @@ export default function UsersPage() {
                 </tr>
               </thead>
               <tbody className="divide-y">
+                {/* UserListInfoResponse: { id, fullName, email, phone, role, status, cardStatus } */}
                 {items.map((u) => (
-                  <tr key={u.userId ?? u.id}>
-                    <td className="px-4 py-3">{u.userId ?? u.id}</td>
+                  <tr key={u.id}>
+                    <td className="px-4 py-3">{u.id}</td>
                     <td className="px-4 py-3 font-medium">{u.fullName}</td>
                     <td className="px-4 py-3">{u.email}</td>
                     <td className="px-4 py-3">{u.phone}</td>
                     <td className="px-4 py-3">{u.role}</td>
-                    <td className="px-4 py-3"><Badge className={accountStatusColors[u.status]}>{u.status}</Badge></td>
-                    <td className="px-4 py-3"><Badge className={cardStatusColors[u.cardStatus]}>{u.cardStatus}</Badge></td>
                     <td className="px-4 py-3">
-                      <Link to={`/admin/users/${u.userId ?? u.id}`}>
+                      <Badge className={accountStatusColors[u.status]}>{u.status}</Badge>
+                    </td>
+                    <td className="px-4 py-3">
+                      <Badge className={cardStatusColors[u.cardStatus]}>{u.cardStatus}</Badge>
+                    </td>
+                    <td className="px-4 py-3">
+                      <Link to={`/admin/users/${u.id}`}>
                         <Button size="sm" variant="secondary">Chi tiết</Button>
                       </Link>
                     </td>

@@ -64,20 +64,21 @@ export default function ReservationsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y">
+                {/* ReservationResponse: { reservationId, userId, fullName, bookId, title, status, createdAt } */}
                 {items.map((r) => (
-                  <tr key={r.reservationId ?? r.id}>
-                    <td className="px-4 py-3">{r.reservationId ?? r.id}</td>
-                    <td className="px-4 py-3">{r.readerName}</td>
-                    <td className="px-4 py-3">{r.bookTitle}</td>
+                  <tr key={r.reservationId}>
+                    <td className="px-4 py-3">{r.reservationId}</td>
+                    <td className="px-4 py-3">{r.fullName}</td>
+                    <td className="px-4 py-3">{r.title}</td>
                     <td className="px-4 py-3"><Badge className={reservationStatusColors[r.status]}>{r.status}</Badge></td>
                     <td className="px-4 py-3">{formatDate(r.createdAt)}</td>
                     <td className="px-4 py-3">
                       {r.status === 'WAITING' && (
                         <div className="flex gap-2">
-                          <Button size="sm" loading={completeMutation.isPending} onClick={() => completeMutation.mutate(r.reservationId ?? r.id)}>
+                          <Button size="sm" loading={completeMutation.isPending} onClick={() => completeMutation.mutate(r.reservationId)}>
                             Chuyển mượn
                           </Button>
-                          <Button size="sm" variant="danger" loading={cancelMutation.isPending} onClick={() => cancelMutation.mutate(r.reservationId ?? r.id)}>
+                          <Button size="sm" variant="danger" loading={cancelMutation.isPending} onClick={() => cancelMutation.mutate(r.reservationId)}>
                             Hủy
                           </Button>
                         </div>

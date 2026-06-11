@@ -18,6 +18,7 @@ export default function BookCopiesPage() {
   const [status, setStatus] = useState('')
   const [page, setPage] = useState(1)
 
+  // BookResponse list để lấy danh sách sách cho dropdown
   const { data: booksRes } = useQuery({ queryKey: ['books-all'], queryFn: () => bookApi.getAll({ pageSize: 100 }) })
   const books = getPaginatedItems(booksRes).items
 
@@ -40,9 +41,10 @@ export default function BookCopiesPage() {
       <h1 className="text-2xl font-bold text-slate-900">Quản lý bản sao sách</h1>
 
       <div className="mt-4 flex gap-3">
+        {/* BookResponse: { bookId, title } */}
         <Select value={bookId} onChange={(e) => { setBookId(e.target.value); setPage(1) }} className="max-w-xs">
           <option value="">Tất cả sách</option>
-          {books.map((b) => <option key={b.bookId ?? b.id} value={b.bookId ?? b.id}>{b.title}</option>)}
+          {books.map((b) => <option key={b.bookId} value={b.bookId}>{b.title}</option>)}
         </Select>
         <Select value={status} onChange={(e) => { setStatus(e.target.value); setPage(1) }} className="max-w-xs">
           <option value="">Tất cả trạng thái</option>
@@ -68,17 +70,18 @@ export default function BookCopiesPage() {
                 </tr>
               </thead>
               <tbody className="divide-y">
+                {/* BookCopyResponse: { copyId, bookId, bookTitle, barcode, shelfLocation, status, condition, createdAt } */}
                 {items.map((copy) => (
-                  <tr key={copy.bookCopyId ?? copy.id}>
+                  <tr key={copy.copyId}>
                     <td className="px-4 py-3 font-mono">{copy.barcode}</td>
-                    <td className="px-4 py-3">{copy.bookTitle ?? copy.book?.title}</td>
+                    <td className="px-4 py-3">{copy.bookTitle}</td>
                     <td className="px-4 py-3">{copy.shelfLocation || '—'}</td>
                     <td className="px-4 py-3">
                       <Badge className={bookCopyStatusColors[copy.status]}>{copy.status}</Badge>
                     </td>
-                    <td className="px-4 py-3">{copy.physicalCondition ?? 'Normal'}</td>
+                    <td className="px-4 py-3">{copy.condition}</td>
                     <td className="px-4 py-3">
-                      <Link to={`/admin/book-copies/${copy.bookCopyId ?? copy.id}`}>
+                      <Link to={`/admin/book-copies/${copy.copyId}`}>
                         <Button size="sm" variant="secondary">Chi tiết</Button>
                       </Link>
                     </td>

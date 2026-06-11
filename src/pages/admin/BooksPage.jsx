@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Plus, Pencil, Trash2, Eye } from 'lucide-react'
-import { bookApi, categoryApi, authorApi, publisherApi } from '../../apis/apis'
+import { bookApi, categoryApi, authorApi } from '../../apis/apis'
 import useDebounce from '../../hooks/useDebounce'
 import { getApiData, getPaginatedItems } from '../../utils/helpers'
 import { toast } from '../../stores/toastStore'
@@ -24,23 +24,22 @@ export default function BooksPage() {
   const [keyword, setKeyword] = useState('')
   const [categoryId, setCategoryId] = useState('')
   const [authorId, setAuthorId] = useState('')
-  const [publisherId, setPublisherId] = useState('')
   const [page, setPage] = useState(1)
   const [deleteId, setDeleteId] = useState(null)
   const debouncedKeyword = useDebounce(keyword)
 
+  // CategoryResponse: { categoryId, categoryName, description }
   const { data: categoriesRes } = useQuery({ queryKey: ['categories'], queryFn: () => categoryApi.getAll() })
+  // AuthorResponse: { authorId, authorName, biography, authorUrl }
   const { data: authorsRes } = useQuery({ queryKey: ['authors'], queryFn: () => authorApi.getAll() })
-  const { data: publishersRes } = useQuery({ queryKey: ['publishers'], queryFn: () => publisherApi.getAll() })
 
   const { data, isLoading, isError, refetch } = useQuery({
-    queryKey: ['admin-books', debouncedKeyword, categoryId, authorId, publisherId, page],
+    queryKey: ['admin-books', debouncedKeyword, categoryId, authorId, page],
     queryFn: () =>
       bookApi.getAll({
         keyword: debouncedKeyword || undefined,
         categoryId: categoryId || undefined,
         authorId: authorId || undefined,
-        publisherId: publisherId || undefined,
         page,
         pageSize: 10,
       }),
@@ -58,7 +57,6 @@ export default function BooksPage() {
 
   const categories = getApiData(categoriesRes) ?? []
   const authors = getApiData(authorsRes) ?? []
-  const publishers = getApiData(publishersRes) ?? []
   const { items, totalPages, totalRecords } = getPaginatedItems(data)
 
   return (
@@ -71,7 +69,7 @@ export default function BooksPage() {
         </Link>
       </div>
 
-      <div className="mt-4 grid gap-3 rounded-xl border bg-white p-4 sm:grid-cols-2 lg:grid-cols-5">
+      <div className="mt-4 grid gap-3 rounded-xl border bg-white p-4 sm:grid-cols-2 lg:grid-cols-4">
         <input
           placeholder="Tìm kiếm..."
           value={keyword}
@@ -80,15 +78,11 @@ export default function BooksPage() {
         />
         <Select value={categoryId} onChange={(e) => { setCategoryId(e.target.value); setPage(1) }}>
           <option value="">Danh mục</option>
-          {categories.map((c) => <option key={c.categoryId ?? c.id} value={c.categoryId ?? c.id}>{c.name}</option>)}
+          {categories.map((c) => <option key={c.categoryId} value={c.categoryId}>{c.categoryName}</option>)}
         </Select>
         <Select value={authorId} onChange={(e) => { setAuthorId(e.target.value); setPage(1) }}>
           <option value="">Tác giả</option>
-          {authors.map((a) => <option key={a.authorId ?? a.id} value={a.authorId ?? a.id}>{a.name}</option>)}
-        </Select>
-        <Select value={publisherId} onChange={(e) => { setPublisherId(e.target.value); setPage(1) }}>
-          <option value="">NXB</option>
-          {publishers.map((p) => <option key={p.publisherId ?? p.id} value={p.publisherId ?? p.id}>{p.name}</option>)}
+          {authors.map((a) => <option key={a.authorId} value={a.authorId}>{a.authorName}</option>)}
         </Select>
       </div>
 
@@ -110,8 +104,9 @@ export default function BooksPage() {
                 </tr>
               </thead>
               <tbody className="divide-y">
+                {/* BookResponse: { bookId, title, isbn, totalCopies, availableCopies, language, description, coverImage } */}
                 {items.map((book) => (
-                  <tr key={book.bookId ?? book.id} className="hover:bg-slate-50">
+                  <tr key={book.bookId} className="hover:bg-slate-50">
                     <td className="px-4 py-3 font-medium">{book.title}</td>
                     <td className="px-4 py-3">{book.isbn}</td>
                     <td className="px-4 py-3">{book.language}</td>
@@ -123,10 +118,10 @@ export default function BooksPage() {
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex gap-1">
-                        <Link to={`/books/${book.bookId ?? book.id}`}><Button size="sm" variant="ghost"><Eye className="h-4 w-4" /></Button></Link>
-                        <Link to={`/admin/books/${book.bookId ?? book.id}/edit`}><Button size="sm" variant="ghost"><Pencil className="h-4 w-4" /></Button></Link>
+                        <Link to={`/books/${book.bookId}`}><Button size="sm" variant="ghost"><Eye className="h-4 w-4" /></Button></Link>
+                        <Link to={`/admin/books/${book.bookId}/edit`}><Button size="sm" variant="ghost"><Pencil className="h-4 w-4" /></Button></Link>
                         {isAdmin(role) && (
-                          <Button size="sm" variant="ghost" onClick={() => setDeleteId(book.bookId ?? book.id)}>
+                          <Button size="sm" variant="ghost" onClick={() => setDeleteId(book.bookId)}>
                             <Trash2 className="h-4 w-4 text-red-500" />
                           </Button>
                         )}

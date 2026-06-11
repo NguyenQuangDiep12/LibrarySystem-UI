@@ -21,13 +21,15 @@ export default function PublishersPage() {
   const [modalOpen, setModalOpen] = useState(false)
   const [deleteId, setDeleteId] = useState(null)
   const [editing, setEditing] = useState(null)
-  const [form, setForm] = useState({ name: '', logoUrl: '' })
+  // PublisherRequest: { publisherName, logoUrl }
+  const [form, setForm] = useState({ publisherName: '', logoUrl: '' })
 
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ['publishers'],
     queryFn: () => publisherApi.getAll(),
   })
 
+  // PublisherResponse: { publisherId, publisherName, logoUrl }
   const publishers = getApiData(data) ?? []
 
   const saveMutation = useMutation({
@@ -50,18 +52,28 @@ export default function PublishersPage() {
     onError: (err) => toast.error(err.message || 'Không thể xóa NXB còn sách liên kết'),
   })
 
+  const openCreate = () => {
+    setEditing(null)
+    setForm({ publisherName: '', logoUrl: '' })
+    setModalOpen(true)
+  }
+
+  const openEdit = (p) => {
+    setEditing(p.publisherId)
+    setForm({ publisherName: p.publisherName, logoUrl: p.logoUrl ?? '' })
+    setModalOpen(true)
+  }
+
   return (
     <div>
       <Breadcrumb items={[{ label: 'Nhà xuất bản' }]} />
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Quản lý nhà xuất bản</h1>
-        <Button onClick={() => { setEditing(null); setForm({ name: '', logoUrl: '' }); setModalOpen(true) }}>
-          <Plus className="h-4 w-4" /> Thêm NXB
-        </Button>
+        <Button onClick={openCreate}><Plus className="h-4 w-4" /> Thêm NXB</Button>
       </div>
 
       <div className="mt-4 overflow-hidden rounded-xl border bg-white shadow-sm">
-        {isLoading && <div className="p-6"><TableSkeleton cols={4} /></div>}
+        {isLoading && <div className="p-6"><TableSkeleton cols={3} /></div>}
         {isError && <ErrorState onRetry={refetch} />}
         {!isLoading && !isError && publishers.length === 0 && <EmptyState />}
         {!isLoading && !isError && publishers.length > 0 && (
@@ -75,18 +87,18 @@ export default function PublishersPage() {
             </thead>
             <tbody className="divide-y">
               {publishers.map((p) => (
-                <tr key={p.publisherId ?? p.id}>
+                <tr key={p.publisherId}>
                   <td className="px-4 py-3">
                     {p.logoUrl && <img src={p.logoUrl} alt="" className="h-8 w-8 object-contain" />}
                   </td>
-                  <td className="px-4 py-3 font-medium">{p.name}</td>
+                  <td className="px-4 py-3 font-medium">{p.publisherName}</td>
                   <td className="px-4 py-3">
                     <div className="flex gap-1">
-                      <Button size="sm" variant="ghost" onClick={() => { setEditing(p.publisherId ?? p.id); setForm({ name: p.name, logoUrl: p.logoUrl }); setModalOpen(true) }}>
+                      <Button size="sm" variant="ghost" onClick={() => openEdit(p)}>
                         <Pencil className="h-4 w-4" />
                       </Button>
                       {isAdmin(role) && (
-                        <Button size="sm" variant="ghost" onClick={() => setDeleteId(p.publisherId ?? p.id)}>
+                        <Button size="sm" variant="ghost" onClick={() => setDeleteId(p.publisherId)}>
                           <Trash2 className="h-4 w-4 text-red-500" />
                         </Button>
                       )}
@@ -101,7 +113,8 @@ export default function PublishersPage() {
 
       <Modal open={modalOpen} onClose={() => setModalOpen(false)} title={editing ? 'Sửa NXB' : 'Thêm NXB'}>
         <div className="space-y-4">
-          <Input label="Tên NXB" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+          {/* PublisherRequest: { publisherName, logoUrl } */}
+          <Input label="Tên NXB" value={form.publisherName} onChange={(e) => setForm({ ...form, publisherName: e.target.value })} />
           <Input label="Logo URL" value={form.logoUrl} onChange={(e) => setForm({ ...form, logoUrl: e.target.value })} />
           {form.logoUrl && <img src={form.logoUrl} alt="" className="h-12 object-contain" />}
           <div className="flex justify-end gap-3">
@@ -111,7 +124,14 @@ export default function PublishersPage() {
         </div>
       </Modal>
 
-      <ConfirmDialog open={!!deleteId} onClose={() => setDeleteId(null)} onConfirm={() => deleteMutation.mutate(deleteId)} loading={deleteMutation.isPending} title="Xóa NXB" message="Không thể hoàn tác. NXB còn sách liên kết sẽ bị từ chối." />
+      <ConfirmDialog
+        open={!!deleteId}
+        onClose={() => setDeleteId(null)}
+        onConfirm={() => deleteMutation.mutate(deleteId)}
+        loading={deleteMutation.isPending}
+        title="Xóa NXB"
+        message="Không thể hoàn tác. NXB còn sách liên kết sẽ bị từ chối."
+      />
     </div>
   )
 }

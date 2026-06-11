@@ -37,10 +37,15 @@ export default function BookFormPage() {
     enabled: isEdit,
   })
 
+  // CategoryResponse: { categoryId, categoryName, description }
   const { data: categoriesRes } = useQuery({ queryKey: ['categories'], queryFn: () => categoryApi.getAll() })
+  // AuthorResponse: { authorId, authorName, biography, authorUrl }
   const { data: authorsRes } = useQuery({ queryKey: ['authors'], queryFn: () => authorApi.getAll() })
+  // PublisherResponse: { publisherId, publisherName, logoUrl }
   const { data: publishersRes } = useQuery({ queryKey: ['publishers'], queryFn: () => publisherApi.getAll() })
 
+  // BookDetailResponse: { bookId, title, isbn, language, description, coverImage,
+  //   publisher: PublisherResponse, authors: AuthorResponse[], categories: CategoryResponse[] }
   const book = getApiData(bookRes)
   const categories = getApiData(categoriesRes) ?? []
   const authors = getApiData(authorsRes) ?? []
@@ -55,9 +60,9 @@ export default function BookFormPage() {
           language: book.language,
           description: book.description,
           coverImage: book.coverImage,
-          publisherId: String(book.publisherId ?? book.publisher?.publisherId ?? ''),
-          authorIds: (book.authors ?? []).map((a) => String(a.authorId ?? a.id)),
-          categoryIds: (book.categories ?? []).map((c) => String(c.categoryId ?? c.id)),
+          publisherId: String(book.publisher?.publisherId ?? ''),
+          authorIds: (book.authors ?? []).map((a) => String(a.authorId)),
+          categoryIds: (book.categories ?? []).map((c) => String(c.categoryId)),
         }
       : {
           title: '', isbn: '', language: 'Vietnamese', description: '', coverImage: '',
@@ -108,16 +113,18 @@ export default function BookFormPage() {
         <Input label="URL ảnh bìa" error={errors.coverImage?.message} {...register('coverImage')} />
         {coverImage && <img src={coverImage} alt="Preview" className="h-40 rounded-lg object-cover" />}
 
+        {/* PublisherResponse: { publisherId, publisherName, logoUrl } */}
         <Select label="Nhà xuất bản" error={errors.publisherId?.message} {...register('publisherId')}>
           <option value="">Chọn NXB</option>
-          {publishers.map((p) => <option key={p.publisherId ?? p.id} value={p.publisherId ?? p.id}>{p.name}</option>)}
+          {publishers.map((p) => <option key={p.publisherId} value={p.publisherId}>{p.publisherName}</option>)}
         </Select>
 
+        {/* AuthorResponse: { authorId, authorName } */}
         <div>
           <label className="mb-2 block text-sm font-medium">Tác giả *</label>
           <div className="flex flex-wrap gap-2">
             {authors.map((a) => {
-              const val = String(a.authorId ?? a.id)
+              const val = String(a.authorId)
               return (
                 <button
                   key={val}
@@ -125,7 +132,7 @@ export default function BookFormPage() {
                   onClick={() => toggleMulti('authorIds', val)}
                   className={`rounded-full px-3 py-1 text-sm border ${selectedAuthors.includes(val) ? 'bg-primary text-white border-primary' : 'border-slate-300'}`}
                 >
-                  {a.name}
+                  {a.authorName}
                 </button>
               )
             })}
@@ -133,11 +140,12 @@ export default function BookFormPage() {
           {errors.authorIds && <p className="mt-1 text-xs text-red-600">{errors.authorIds.message}</p>}
         </div>
 
+        {/* CategoryResponse: { categoryId, categoryName } */}
         <div>
           <label className="mb-2 block text-sm font-medium">Danh mục *</label>
           <div className="flex flex-wrap gap-2">
             {categories.map((c) => {
-              const val = String(c.categoryId ?? c.id)
+              const val = String(c.categoryId)
               return (
                 <button
                   key={val}
@@ -145,7 +153,7 @@ export default function BookFormPage() {
                   onClick={() => toggleMulti('categoryIds', val)}
                   className={`rounded-full px-3 py-1 text-sm border ${selectedCategories.includes(val) ? 'bg-primary text-white border-primary' : 'border-slate-300'}`}
                 >
-                  {c.name}
+                  {c.categoryName}
                 </button>
               )
             })}

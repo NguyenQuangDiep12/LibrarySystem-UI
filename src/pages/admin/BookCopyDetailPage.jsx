@@ -17,7 +17,7 @@ export default function BookCopyDetailPage() {
   const { id } = useParams()
   const queryClient = useQueryClient()
   const [shelfLocation, setShelfLocation] = useState('')
-  const [physicalCondition, setPhysicalCondition] = useState('Normal')
+  const [condition, setCondition] = useState('')
   const [status, setStatus] = useState('')
 
   const { data, isLoading, isError, refetch } = useQuery({
@@ -25,10 +25,16 @@ export default function BookCopyDetailPage() {
     queryFn: () => bookCopyApi.getById(id),
   })
 
+  // BookCopyDetailResponse: { copyId, barcode, shelfLocation, status, condition, createdAt,
+  //   bookId, bookTitle, authorName (List<string>), isbn, publisher }
   const copy = getApiData(data)
 
   const updateCopy = useMutation({
-    mutationFn: () => bookCopyApi.update(id, { shelfLocation, physicalCondition }),
+    mutationFn: () => bookCopyApi.update(id, {
+      shelfLocation: shelfLocation || copy.shelfLocation,
+      // UpdateBookCopyRequest: { shelfLocation, condition (BookCondition enum) }
+      condition: condition || undefined,
+    }),
     onSuccess: () => {
       toast.success('Cập nhật thành công')
       queryClient.invalidateQueries({ queryKey: ['book-copy', id] })
@@ -37,6 +43,7 @@ export default function BookCopyDetailPage() {
   })
 
   const updateStatus = useMutation({
+    // UpdateBookCopyStatusRequest: { status (BookCopyStatus enum) }
     mutationFn: (newStatus) => bookCopyApi.updateStatus(id, newStatus),
     onSuccess: () => {
       toast.success('Đổi trạng thái thành công')
@@ -59,26 +66,42 @@ export default function BookCopyDetailPage() {
         </div>
 
         <dl className="mt-6 grid gap-4 sm:grid-cols-2">
-          <div><dt className="text-sm text-slate-500">Tên sách</dt><dd className="font-medium">{copy.bookTitle ?? copy.book?.title}</dd></div>
-          <div><dt className="text-sm text-slate-500">ISBN</dt><dd>{copy.isbn ?? copy.book?.isbn}</dd></div>
+          <div><dt className="text-sm text-slate-500">Tên sách</dt><dd className="font-medium">{copy.bookTitle}</dd></div>
+          <div><dt className="text-sm text-slate-500">ISBN</dt><dd>{copy.isbn}</dd></div>
+          <div><dt className="text-sm text-slate-500">Nhà xuất bản</dt><dd>{copy.publisher || '—'}</dd></div>
+          <div>
+            <dt className="text-sm text-slate-500">Tác giả</dt>
+            <dd>{copy.authorName?.join(', ') || '—'}</dd>
+          </div>
           <div><dt className="text-sm text-slate-500">Vị trí kệ</dt><dd>{copy.shelfLocation || '—'}</dd></div>
-          <div><dt className="text-sm text-slate-500">Tình trạng</dt><dd>{copy.physicalCondition ?? 'Normal'}</dd></div>
+          <div><dt className="text-sm text-slate-500">Tình trạng</dt><dd>{copy.condition}</dd></div>
           <div><dt className="text-sm text-slate-500">Ngày tạo</dt><dd>{formatDateTime(copy.createdAt)}</dd></div>
         </dl>
 
         <div className="mt-8 grid gap-6 border-t pt-6 lg:grid-cols-2">
           <div className="space-y-3">
             <h2 className="font-semibold">Cập nhật thông tin</h2>
-            <Input label="Vị trí kệ" defaultValue={copy.shelfLocation} onChange={(e) => setShelfLocation(e.target.value)} />
-            <Select label="Tình trạng vật lý" defaultValue={copy.physicalCondition ?? 'Normal'} onChange={(e) => setPhysicalCondition(e.target.value)}>
-              <option value="Normal">Normal</option>
-              <option value="Torn">Torn</option>
-              <option value="Damaged">Damaged</option>
+            <Input
+              label="Vị trí kệ"
+              defaultValue={copy.shelfLocation}
+              onChange={(e) => setShelfLocation(e.target.value)}
+            />
+            {/* UpdateBookCopyRequest.condition: BookCondition enum */}
+            <Select
+              label="Tình trạng vật lý"
+              defaultValue={copy.condition}
+              onChange={(e) => setCondition(e.target.value)}
+            >
+              <option value="NORMAL">NORMAL</option>
+              <option value="TORN">TORN</option>
+              <option value="DAMAGED">DAMAGED</option>
+              <option value="LOST">LOST</option>
             </Select>
             <Button loading={updateCopy.isPending} onClick={() => updateCopy.mutate()}>Lưu</Button>
           </div>
           <div className="space-y-3">
             <h2 className="font-semibold">Đổi trạng thái</h2>
+            {/* UpdateBookCopyStatusRequest.status: BookCopyStatus enum */}
             <Select value={status || copy.status} onChange={(e) => setStatus(e.target.value)}>
               {Object.keys(bookCopyStatusColors).map((s) => <option key={s} value={s}>{s}</option>)}
             </Select>

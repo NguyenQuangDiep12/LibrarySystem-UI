@@ -22,13 +22,15 @@ export default function CategoriesPage() {
   const [modalOpen, setModalOpen] = useState(false)
   const [deleteId, setDeleteId] = useState(null)
   const [editing, setEditing] = useState(null)
-  const [form, setForm] = useState({ name: '', description: '' })
+  // CreateCategoryRequest / UpdateCategoryRequest: { categoryName, description }
+  const [form, setForm] = useState({ categoryName: '', description: '' })
 
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ['categories'],
     queryFn: () => categoryApi.getAll(),
   })
 
+  // CategoryResponse: { categoryId, categoryName, description }
   const categories = getApiData(data) ?? []
 
   const saveMutation = useMutation({
@@ -51,14 +53,24 @@ export default function CategoriesPage() {
     onError: (err) => toast.error(err.message),
   })
 
+  const openCreate = () => {
+    setEditing(null)
+    setForm({ categoryName: '', description: '' })
+    setModalOpen(true)
+  }
+
+  const openEdit = (c) => {
+    setEditing(c.categoryId)
+    setForm({ categoryName: c.categoryName, description: c.description })
+    setModalOpen(true)
+  }
+
   return (
     <div>
       <Breadcrumb items={[{ label: 'Danh mục' }]} />
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Quản lý danh mục</h1>
-        <Button onClick={() => { setEditing(null); setForm({ name: '', description: '' }); setModalOpen(true) }}>
-          <Plus className="h-4 w-4" /> Thêm danh mục
-        </Button>
+        <Button onClick={openCreate}><Plus className="h-4 w-4" /> Thêm danh mục</Button>
       </div>
 
       <div className="mt-4 overflow-hidden rounded-xl border bg-white shadow-sm">
@@ -77,17 +89,17 @@ export default function CategoriesPage() {
             </thead>
             <tbody className="divide-y">
               {categories.map((c) => (
-                <tr key={c.categoryId ?? c.id}>
-                  <td className="px-4 py-3">{c.categoryId ?? c.id}</td>
-                  <td className="px-4 py-3 font-medium">{c.name}</td>
+                <tr key={c.categoryId}>
+                  <td className="px-4 py-3">{c.categoryId}</td>
+                  <td className="px-4 py-3 font-medium">{c.categoryName}</td>
                   <td className="px-4 py-3 max-w-md truncate">{c.description}</td>
                   <td className="px-4 py-3">
                     <div className="flex gap-1">
-                      <Button size="sm" variant="ghost" onClick={() => { setEditing(c.categoryId ?? c.id); setForm({ name: c.name, description: c.description }); setModalOpen(true) }}>
+                      <Button size="sm" variant="ghost" onClick={() => openEdit(c)}>
                         <Pencil className="h-4 w-4" />
                       </Button>
                       {isAdmin(role) && (
-                        <Button size="sm" variant="ghost" onClick={() => setDeleteId(c.categoryId ?? c.id)}>
+                        <Button size="sm" variant="ghost" onClick={() => setDeleteId(c.categoryId)}>
                           <Trash2 className="h-4 w-4 text-red-500" />
                         </Button>
                       )}
@@ -102,7 +114,8 @@ export default function CategoriesPage() {
 
       <Modal open={modalOpen} onClose={() => setModalOpen(false)} title={editing ? 'Sửa danh mục' : 'Thêm danh mục'}>
         <div className="space-y-4">
-          <Input label="Tên danh mục" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+          {/* CreateCategoryRequest: { categoryName, description } */}
+          <Input label="Tên danh mục" value={form.categoryName} onChange={(e) => setForm({ ...form, categoryName: e.target.value })} />
           <Textarea label="Mô tả" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
           <div className="flex justify-end gap-3">
             <Button variant="secondary" onClick={() => setModalOpen(false)}>Hủy</Button>
@@ -111,7 +124,14 @@ export default function CategoriesPage() {
         </div>
       </Modal>
 
-      <ConfirmDialog open={!!deleteId} onClose={() => setDeleteId(null)} onConfirm={() => deleteMutation.mutate(deleteId)} loading={deleteMutation.isPending} title="Xóa danh mục" message="Bạn có chắc muốn xóa?" />
+      <ConfirmDialog
+        open={!!deleteId}
+        onClose={() => setDeleteId(null)}
+        onConfirm={() => deleteMutation.mutate(deleteId)}
+        loading={deleteMutation.isPending}
+        title="Xóa danh mục"
+        message="Bạn có chắc muốn xóa?"
+      />
     </div>
   )
 }

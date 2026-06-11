@@ -23,7 +23,7 @@ export default function AdminBorrowRecordDetailPage() {
   const [showExtendModal, setShowExtendModal] = useState(false)
   const [showCancelConfirm, setShowCancelConfirm] = useState(false)
   const [returnDetails, setReturnDetails] = useState([])
-  const [extendApproved, setExtendApproved] = useState(true)
+  const [isApproved, setIsApproved] = useState(true)
   const [rejectReason, setRejectReason] = useState('')
 
   const { data, isLoading, isError, refetch } = useQuery({
@@ -31,9 +31,14 @@ export default function AdminBorrowRecordDetailPage() {
     queryFn: () => borrowApi.getById(id),
   })
 
+  // BorrowRecordDetailResponse: { borrowId, borrowCode, readerId, readerName,
+  //   approverId, approverName, borrowDate, dueDate, returnedDate, borrowType,
+  //   status, extensionCount, borrowDetails: BorrowDetailResponse[] }
   const record = getApiData(data)
 
   const confirmReturn = useMutation({
+    // ConfirmReturnRequest: { returnItems: ReturnItemCondition[] }
+    // ReturnItemCondition: { copyId, condition (BookCondition), copyStatus (BookCopyStatus), fineAmount, fineReason }
     mutationFn: (payload) => borrowApi.confirmReturn(id, payload),
     onSuccess: () => {
       toast.success('Xác nhận trả sách thành công')
@@ -54,7 +59,11 @@ export default function AdminBorrowRecordDetailPage() {
   })
 
   const extendRecord = useMutation({
-    mutationFn: () => borrowApi.extend(id, { approved: extendApproved, rejectReason: extendApproved ? undefined : rejectReason }),
+    // ProcessExtensionRequest: { isApproved, reason }
+    mutationFn: () => borrowApi.extend(id, {
+      isApproved,
+      reason: isApproved ? undefined : rejectReason,
+    }),
     onSuccess: () => {
       toast.success('Xử lý gia hạn thành công')
       setShowExtendModal(false)
@@ -64,10 +73,12 @@ export default function AdminBorrowRecordDetailPage() {
   })
 
   const openReturnModal = () => {
+    // BorrowDetailResponse: { borrowDetailId, copyId, barcode, bookTitle, returnedAt, itemCondition, status }
     setReturnDetails(
-      (record?.details ?? []).map((d) => ({
-        borrowDetailId: d.borrowDetailId ?? d.id,
-        returnCondition: 'Normal',
+      (record?.borrowDetails ?? []).map((d) => ({
+        copyId: d.copyId,
+        condition: 'NORMAL',
+        copyStatus: 'AVAILABLE',
         fineAmount: 0,
         fineReason: '',
       })),
@@ -97,11 +108,14 @@ export default function AdminBorrowRecordDetailPage() {
           <div>
             <h1 className="text-2xl font-bold">{record.borrowCode}</h1>
             <p className="text-slate-500">Bạn đọc: {record.readerName}</p>
+            {record.approverName && <p className="text-slate-500">Người duyệt: {record.approverName}</p>}
           </div>
           <div className="flex flex-wrap gap-2">
             <Badge className={borrowStatusColors[record.status]}>{record.status}</Badge>
             {record.extensionRequestStatus && record.extensionRequestStatus !== 'NONE' && (
-              <Badge className={extensionStatusColors[record.extensionRequestStatus]}>Gia hạn: {record.extensionRequestStatus}</Badge>
+              <Badge className={extensionStatusColors[record.extensionRequestStatus]}>
+                Gia hạn: {record.extensionRequestStatus}
+              </Badge>
             )}
           </div>
         </div>
@@ -109,7 +123,7 @@ export default function AdminBorrowRecordDetailPage() {
         <dl className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <div><dt className="text-sm text-slate-500">Ngày mượn</dt><dd className="font-medium">{formatDate(record.borrowDate)}</dd></div>
           <div><dt className="text-sm text-slate-500">Hạn trả</dt><dd className="font-medium">{formatDate(record.dueDate)}</dd></div>
-          <div><dt className="text-sm text-slate-500">Ngày trả</dt><dd className="font-medium">{formatDate(record.returnDate)}</dd></div>
+          <div><dt className="text-sm text-slate-500">Ngày trả</dt><dd className="font-medium">{formatDate(record.returnedDate)}</dd></div>
           <div><dt className="text-sm text-slate-500">Số lần gia hạn</dt><dd className="font-medium">{record.extensionCount ?? 0}</dd></div>
         </dl>
 
@@ -125,14 +139,19 @@ export default function AdminBorrowRecordDetailPage() {
             <tr>
               <th className="px-4 py-2">Barcode</th>
               <th className="px-4 py-2">Tên sách</th>
+              <th className="px-4 py-2">Ngày trả</th>
+              <th className="px-4 py-2">Tình trạng</th>
               <th className="px-4 py-2">Trạng thái</th>
             </tr>
           </thead>
           <tbody className="divide-y">
-            {(record.details ?? []).map((d) => (
-              <tr key={d.borrowDetailId ?? d.id}>
+            {/* BorrowDetailResponse: { borrowDetailId, copyId, barcode, bookTitle, returnedAt, itemCondition, status } */}
+            {(record.borrowDetails ?? []).map((d) => (
+              <tr key={d.borrowDetailId}>
                 <td className="px-4 py-2">{d.barcode}</td>
-                <td className="px-4 py-2">{d.bookTitle ?? d.title}</td>
+                <td className="px-4 py-2">{d.bookTitle}</td>
+                <td className="px-4 py-2">{formatDate(d.returnedAt)}</td>
+                <td className="px-4 py-2">{d.itemCondition ?? '—'}</td>
                 <td className="px-4 py-2">{d.status}</td>
               </tr>
             ))}
@@ -140,45 +159,74 @@ export default function AdminBorrowRecordDetailPage() {
         </table>
       </div>
 
+      {/* Modal trả sách */}
       <Modal open={showReturnModal} onClose={() => setShowReturnModal(false)} title="Xác nhận trả sách" size="xl">
         <div className="space-y-4">
-          {returnDetails.map((d, i) => (
-            <div key={d.borrowDetailId} className="grid gap-3 rounded-lg border p-4 sm:grid-cols-3">
-              <Select label="Tình trạng" value={d.returnCondition} onChange={(e) => updateReturnDetail(i, 'returnCondition', e.target.value)}>
-                <option value="Normal">Normal</option>
-                <option value="Torn">Torn</option>
-                <option value="Damaged">Damaged</option>
-                <option value="Lost">Lost</option>
-              </Select>
-              {d.returnCondition !== 'Normal' && (
-                <>
-                  <Input label="Số tiền phạt" type="number" value={d.fineAmount} onChange={(e) => updateReturnDetail(i, 'fineAmount', Number(e.target.value))} />
-                  <Input label="Lý do phạt" value={d.fineReason} onChange={(e) => updateReturnDetail(i, 'fineReason', e.target.value)} />
-                </>
-              )}
+          {(record.borrowDetails ?? []).map((d, i) => (
+            <div key={d.borrowDetailId} className="rounded-lg border p-4">
+              <p className="mb-3 font-medium text-slate-700">{d.bookTitle} <span className="font-mono text-slate-500">({d.barcode})</span></p>
+              <div className="grid gap-3 sm:grid-cols-3">
+                {/* ReturnItemCondition.condition: BookCondition enum */}
+                <Select
+                  label="Tình trạng"
+                  value={returnDetails[i]?.condition ?? 'NORMAL'}
+                  onChange={(e) => updateReturnDetail(i, 'condition', e.target.value)}
+                >
+                  <option value="NORMAL">NORMAL</option>
+                  <option value="TORN">TORN</option>
+                  <option value="DAMAGED">DAMAGED</option>
+                  <option value="LOST">LOST</option>
+                </Select>
+                {returnDetails[i]?.condition !== 'NORMAL' && (
+                  <>
+                    <Input
+                      label="Số tiền phạt (VNĐ)"
+                      type="number"
+                      value={returnDetails[i]?.fineAmount ?? 0}
+                      onChange={(e) => updateReturnDetail(i, 'fineAmount', Number(e.target.value))}
+                    />
+                    <Input
+                      label="Lý do phạt"
+                      value={returnDetails[i]?.fineReason ?? ''}
+                      onChange={(e) => updateReturnDetail(i, 'fineReason', e.target.value)}
+                    />
+                  </>
+                )}
+              </div>
             </div>
           ))}
           <div className="flex justify-end gap-3">
             <Button variant="secondary" onClick={() => setShowReturnModal(false)}>Hủy</Button>
-            <Button loading={confirmReturn.isPending} onClick={() => confirmReturn.mutate({ details: returnDetails })}>Xác nhận</Button>
+            <Button
+              loading={confirmReturn.isPending}
+              onClick={() => confirmReturn.mutate({ returnItems: returnDetails })}
+            >
+              Xác nhận
+            </Button>
           </div>
         </div>
       </Modal>
 
+      {/* Modal duyệt gia hạn */}
       <Modal open={showExtendModal} onClose={() => setShowExtendModal(false)} title="Duyệt gia hạn">
         <div className="space-y-4">
+          {/* ProcessExtensionRequest: { isApproved, reason } */}
           <div className="flex gap-4">
             <label className="flex items-center gap-2">
-              <input type="radio" checked={extendApproved} onChange={() => setExtendApproved(true)} />
+              <input type="radio" checked={isApproved} onChange={() => setIsApproved(true)} />
               Chấp nhận
             </label>
             <label className="flex items-center gap-2">
-              <input type="radio" checked={!extendApproved} onChange={() => setExtendApproved(false)} />
+              <input type="radio" checked={!isApproved} onChange={() => setIsApproved(false)} />
               Từ chối
             </label>
           </div>
-          {!extendApproved && (
-            <Textarea label="Lý do từ chối" value={rejectReason} onChange={(e) => setRejectReason(e.target.value)} />
+          {!isApproved && (
+            <Textarea
+              label="Lý do từ chối"
+              value={rejectReason}
+              onChange={(e) => setRejectReason(e.target.value)}
+            />
           )}
           <div className="flex justify-end gap-3">
             <Button variant="secondary" onClick={() => setShowExtendModal(false)}>Hủy</Button>

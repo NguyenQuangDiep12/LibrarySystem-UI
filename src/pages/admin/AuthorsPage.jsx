@@ -22,13 +22,15 @@ export default function AuthorsPage() {
   const [modalOpen, setModalOpen] = useState(false)
   const [deleteId, setDeleteId] = useState(null)
   const [editing, setEditing] = useState(null)
-  const [form, setForm] = useState({ name: '', biography: '', infoUrl: '' })
+  // AuthorRequest: { authorName, biography, authorUrl }
+  const [form, setForm] = useState({ authorName: '', biography: '', authorUrl: '' })
 
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ['authors'],
     queryFn: () => authorApi.getAll(),
   })
 
+  // AuthorResponse: { authorId, authorName, biography, authorUrl }
   const authors = getApiData(data) ?? []
 
   const saveMutation = useMutation({
@@ -53,13 +55,13 @@ export default function AuthorsPage() {
 
   const openCreate = () => {
     setEditing(null)
-    setForm({ name: '', biography: '', infoUrl: '' })
+    setForm({ authorName: '', biography: '', authorUrl: '' })
     setModalOpen(true)
   }
 
   const openEdit = (author) => {
-    setEditing(author.authorId ?? author.id)
-    setForm({ name: author.name, biography: author.biography, infoUrl: author.infoUrl })
+    setEditing(author.authorId)
+    setForm({ authorName: author.authorName, biography: author.biography, authorUrl: author.authorUrl })
     setModalOpen(true)
   }
 
@@ -92,15 +94,19 @@ export default function AuthorsPage() {
             </thead>
             <tbody className="divide-y">
               {authors.map((a) => (
-                <tr key={a.authorId ?? a.id}>
-                  <td className="px-4 py-3 font-medium">{a.name}</td>
+                <tr key={a.authorId}>
+                  <td className="px-4 py-3 font-medium">{a.authorName}</td>
                   <td className="px-4 py-3 max-w-xs truncate">{a.biography}</td>
-                  <td className="px-4 py-3"><a href={a.infoUrl} target="_blank" rel="noreferrer" className="text-primary hover:underline">Link</a></td>
+                  <td className="px-4 py-3">
+                    {a.authorUrl && (
+                      <a href={a.authorUrl} target="_blank" rel="noreferrer" className="text-primary hover:underline">Link</a>
+                    )}
+                  </td>
                   <td className="px-4 py-3">
                     <div className="flex gap-1">
                       <Button size="sm" variant="ghost" onClick={() => openEdit(a)}><Pencil className="h-4 w-4" /></Button>
                       {isAdmin(role) && (
-                        <Button size="sm" variant="ghost" onClick={() => setDeleteId(a.authorId ?? a.id)}>
+                        <Button size="sm" variant="ghost" onClick={() => setDeleteId(a.authorId)}>
                           <Trash2 className="h-4 w-4 text-red-500" />
                         </Button>
                       )}
@@ -115,9 +121,10 @@ export default function AuthorsPage() {
 
       <Modal open={modalOpen} onClose={closeModal} title={editing ? 'Sửa tác giả' : 'Thêm tác giả'}>
         <div className="space-y-4">
-          <Input label="Tên tác giả" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+          {/* AuthorRequest: { authorName, biography, authorUrl } */}
+          <Input label="Tên tác giả" value={form.authorName} onChange={(e) => setForm({ ...form, authorName: e.target.value })} />
           <Textarea label="Tiểu sử" value={form.biography} onChange={(e) => setForm({ ...form, biography: e.target.value })} />
-          <Input label="URL thông tin" value={form.infoUrl} onChange={(e) => setForm({ ...form, infoUrl: e.target.value })} />
+          <Input label="URL thông tin" value={form.authorUrl} onChange={(e) => setForm({ ...form, authorUrl: e.target.value })} />
           <div className="flex justify-end gap-3">
             <Button variant="secondary" onClick={closeModal}>Hủy</Button>
             <Button loading={saveMutation.isPending} onClick={() => saveMutation.mutate()}>Lưu</Button>

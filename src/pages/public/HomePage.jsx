@@ -5,7 +5,6 @@ import { Search, RotateCcw } from 'lucide-react'
 import { bookApi, categoryApi, authorApi } from '../../apis/apis'
 import useDebounce from '../../hooks/useDebounce'
 import { getApiData, getPaginatedItems } from '../../utils/helpers'
-import Input from '../../components/ui/Input'
 import Select from '../../components/ui/Select'
 import Button from '../../components/ui/Button'
 import Badge from '../../components/ui/Badge'
@@ -25,12 +24,10 @@ export default function HomePage() {
     queryKey: ['categories'],
     queryFn: () => categoryApi.getAll(),
   })
-
   const { data: authorsRes } = useQuery({
     queryKey: ['authors'],
     queryFn: () => authorApi.getAll(),
   })
-
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ['books', debouncedKeyword, categoryId, authorId, page],
     queryFn: () =>
@@ -43,7 +40,9 @@ export default function HomePage() {
       }),
   })
 
+  // CategoryResponse: { categoryId, categoryName, description }
   const categories = getApiData(categoriesRes) ?? []
+  // AuthorResponse: { authorId, authorName, biography, authorUrl }
   const authors = getApiData(authorsRes) ?? []
   const { items: books, totalPages, totalRecords } = getPaginatedItems(data)
 
@@ -73,22 +72,16 @@ export default function HomePage() {
               className="w-full rounded-lg border border-slate-300 py-2 pl-10 pr-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-blue-100"
             />
           </div>
-          <Select
-            value={categoryId}
-            onChange={(e) => { setCategoryId(e.target.value); setPage(1) }}
-          >
+          <Select value={categoryId} onChange={(e) => { setCategoryId(e.target.value); setPage(1) }}>
             <option value="">Tất cả danh mục</option>
             {categories.map((c) => (
-              <option key={c.categoryId ?? c.id} value={c.categoryId ?? c.id}>{c.name}</option>
+              <option key={c.categoryId} value={c.categoryId}>{c.categoryName}</option>
             ))}
           </Select>
-          <Select
-            value={authorId}
-            onChange={(e) => { setAuthorId(e.target.value); setPage(1) }}
-          >
+          <Select value={authorId} onChange={(e) => { setAuthorId(e.target.value); setPage(1) }}>
             <option value="">Tất cả tác giả</option>
             {authors.map((a) => (
-              <option key={a.authorId ?? a.id} value={a.authorId ?? a.id}>{a.name}</option>
+              <option key={a.authorId} value={a.authorId}>{a.authorName}</option>
             ))}
           </Select>
         </div>
@@ -111,20 +104,18 @@ export default function HomePage() {
           ))}
         </div>
       )}
-
       {isError && <ErrorState message="Không thể tải danh sách sách" onRetry={refetch} />}
-
       {!isLoading && !isError && books.length === 0 && (
         <EmptyState title="Không tìm thấy sách" description="Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm" />
       )}
-
       {!isLoading && !isError && books.length > 0 && (
         <>
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {books.map((book) => (
+              // BookResponse: { bookId, title, isbn, totalCopies, availableCopies, language, description, coverImage }
               <Link
-                key={book.bookId ?? book.id}
-                to={`/books/${book.bookId ?? book.id}`}
+                key={book.bookId}
+                to={`/books/${book.bookId}`}
                 className="group overflow-hidden rounded-xl border bg-white shadow-sm transition-shadow hover:shadow-md"
               >
                 <div className="aspect-[3/4] overflow-hidden bg-slate-100">
@@ -137,7 +128,7 @@ export default function HomePage() {
                 <div className="p-4">
                   <h3 className="line-clamp-2 font-semibold text-slate-900 group-hover:text-primary">{book.title}</h3>
                   <p className="mt-1 text-xs text-slate-500">ISBN: {book.isbn}</p>
-                  <div className="mt-3 flex items-center justify-between">
+                  <div className="mt-3">
                     <Badge className={book.availableCopies > 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}>
                       Còn {book.availableCopies}/{book.totalCopies}
                     </Badge>

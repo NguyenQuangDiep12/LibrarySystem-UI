@@ -48,9 +48,7 @@ export default function BorrowRecordsPage() {
   return (
     <div>
       <Breadcrumb items={[{ label: 'Phiếu mượn' }]} />
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <h1 className="text-2xl font-bold">Phiếu mượn</h1>
-      </div>
+      <h1 className="text-2xl font-bold">Phiếu mượn</h1>
 
       <div className="mt-4 flex flex-wrap gap-2">
         {tabs.map((t) => (
@@ -67,8 +65,18 @@ export default function BorrowRecordsPage() {
       </div>
 
       <div className="mt-4 flex gap-3">
-        <input placeholder="Mã phiếu..." value={borrowCode} onChange={(e) => { setBorrowCode(e.target.value); setPage(1) }} className="rounded-lg border px-3 py-2 text-sm outline-none focus:border-primary" />
-        <input placeholder="Tên bạn đọc..." value={readerName} onChange={(e) => { setReaderName(e.target.value); setPage(1) }} className="rounded-lg border px-3 py-2 text-sm outline-none focus:border-primary" />
+        <input
+          placeholder="Mã phiếu..."
+          value={borrowCode}
+          onChange={(e) => { setBorrowCode(e.target.value); setPage(1) }}
+          className="rounded-lg border px-3 py-2 text-sm outline-none focus:border-primary"
+        />
+        <input
+          placeholder="Tên bạn đọc..."
+          value={readerName}
+          onChange={(e) => { setReaderName(e.target.value); setPage(1) }}
+          className="rounded-lg border px-3 py-2 text-sm outline-none focus:border-primary"
+        />
       </div>
 
       <div className="mt-4 overflow-hidden rounded-xl border bg-white shadow-sm">
@@ -91,8 +99,11 @@ export default function BorrowRecordsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y">
+                {/* BorrowRecordSummaryResponse: { borrowId, borrowCode, readerId, readerName,
+                    borrowDate, dueDate, returnedDate, borrowType, status,
+                    extensionCount, extensionRequestStatus, totalBooks } */}
                 {items.map((r) => (
-                  <tr key={r.borrowRecordId ?? r.id}>
+                  <tr key={r.borrowId}>
                     <td className="px-4 py-3 font-medium">{r.borrowCode}</td>
                     <td className="px-4 py-3">{r.readerName}</td>
                     <td className="px-4 py-3">{formatDate(r.borrowDate)}</td>
@@ -105,7 +116,7 @@ export default function BorrowRecordsPage() {
                       )}
                     </td>
                     <td className="px-4 py-3">
-                      <Link to={`/admin/borrow-records/${r.borrowRecordId ?? r.id}`}>
+                      <Link to={`/admin/borrow-records/${r.borrowId}`}>
                         <Button size="sm" variant="secondary">Chi tiết</Button>
                       </Link>
                     </td>

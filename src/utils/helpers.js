@@ -1,5 +1,7 @@
 export function getApiData(response) {
-  return response?.data ?? response
+  // Backend trả về { success, message, data: T }
+  if (response && 'data' in response) return response.data
+  return response
 }
 
 export function getPaginatedItems(response) {
